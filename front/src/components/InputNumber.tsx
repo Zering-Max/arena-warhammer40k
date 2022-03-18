@@ -1,11 +1,11 @@
-import React, { SetStateAction } from "react";
+import { Dispatch } from "react";
 
 function InputNumber(props: {
   name: string;
   max: string;
   min: string;
   value: number;
-  setValue: (value: number) => SetStateAction<number> | void;
+  setValue: (value: number) => Dispatch<number> | void;
 }) {
   const limitValue = (type: string, val: number) => {
     if (type === "Attaque") {

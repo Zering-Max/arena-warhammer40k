@@ -1,11 +1,16 @@
-import React from "react";
+import React, { useContext, useEffect } from "react";
 import { Character } from "../interfaces/index";
 import { colors } from "../styles/colors";
 import { FlexBox } from "../styles/styledComponents";
 import SelectStuff from "./SelectStuff";
+import { BattleContext } from "../context/battle";
 
 function CharacterFightCard(props: { character: Character }) {
   const [stuff, setStuff] = React.useState<string>("default");
+
+  useEffect(() => {
+    setStuff("default");
+  }, [props.character]);
 
   const buffCharacter = (key: string, stat: number) => {
     if (stuff === "epee" && key === "attaque") {
@@ -30,11 +35,12 @@ function CharacterFightCard(props: { character: Character }) {
     <FlexBox height={100}>
       <FlexBox height={80}>
         <img
-          src={props.character.image}
-          alt={props.character.name}
+          src={props.character?.image}
+          alt={props.character?.name}
           style={{ width: 100, height: 100, borderRadius: 8 }}
         />
-        <span>{props.character.name}</span>
+        <span>{props.character?.name}</span>
+
         <span
           style={{
             color: stuff !== "default" ? "gold" : "white",
@@ -51,8 +57,12 @@ function CharacterFightCard(props: { character: Character }) {
         </span>
         <span>Choisis ton équipement : </span>
       </FlexBox>
-      <SelectStuff stuff={stuff} onChange={e => setStuff(e.target.value)} />
-      {props.character.pv <= 0 ? (
+      <SelectStuff
+        characterId={props.character.id}
+        stuff={stuff}
+        onChange={e => setStuff(e.target.value)}
+      />
+      {props.character?.pv <= 0 ? (
         <span style={{ color: colors.darkred }}>
           {props.character.name} doit se reposer
         </span>

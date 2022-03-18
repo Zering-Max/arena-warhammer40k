@@ -1,3 +1,23 @@
+import React from "react";
+export interface IAppState {
+  selectedToFight: Character[];
+  characters: Character[];
+}
+
+export interface BattleState {
+  charactersInBattle: Character[];
+}
+
+export interface CreateCharacter {
+  name: string;
+  image: string;
+  pv: number;
+  attaque: number;
+}
+
+export interface ArenaProviderProps {
+  children: React.ReactNode;
+}
 export interface Character {
   id: number;
   name: string;

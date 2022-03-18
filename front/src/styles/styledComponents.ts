@@ -16,7 +16,7 @@ export const MainPageContainer = styled.main`
 export const BloodBox = styled.div<BloodBoxProps>(
   ({ medium, large }) => `
 display: flex;
-border: 1px solid gold;
+border: 2px solid black;
 background-color: ${colors.blood};
 border-radius: 8px;
 padding: 8px 8px;

@@ -1,7 +1,6 @@
 import axios from "axios";
-import { useState, useEffect, SetStateAction } from "react";
-import { colors } from "../styles/colors";
-import { Character } from "../interfaces/index";
+import { useState, useEffect, useContext } from "react";
+import { Character, CreateCharacter } from "../interfaces/index";
 import { seedCharacters } from "../utils/index";
 import {
   BloodBox,
@@ -12,121 +11,67 @@ import {
 import InputText from "./InputText";
 import InputNumber from "./InputNumber";
 import CharacterProfileCard from "./CharacterProfileCard";
+import { ArenaContext } from "../context/index";
 
-function SelectionCharactersCard(props: {
-  selectedToFight: Character[];
-  changeSelectedToFight: (c: Character[]) => SetStateAction<Character[]> | void;
-}) {
-  const [characters, setCharacters] = useState<Character[]>([]);
+function SelectionCharactersCard() {
+  //const [characters, setCharacters] = useState<Character[]>([]);
   const [chosen, setChosen] = useState<number>(0);
   const [create, setCreate] = useState<boolean>(false);
-  const [name, setName] = useState<string>("");
-  const [image, setImage] = useState<string>("");
-  const [attaque, setAttaque] = useState<number>(0);
-  const [pv, setPv] = useState<number>(0);
+  const [createCharacter, setCreateCharacter] = useState<CreateCharacter>({
+    name: "",
+    image: "",
+    attaque: 10,
+    pv: 20,
+  });
+  const { state, dispatch } = useContext(ArenaContext);
 
   useEffect(() => {
     (async () => {
       const { data } = await axios.get("characters");
-
       if (data.length === 0) {
         await axios.post("characters/mass", seedCharacters);
         const { data } = await axios.get("characters");
-        setCharacters(data);
-        props.changeSelectedToFight([data[0], data[1]]);
+        //setCharacters(data);
+        dispatch({
+          type: "SET_CHARACTERS",
+          payload: data,
+        });
+
+        dispatch({
+          type: "SET_SELECTEDTOFIGHT",
+          payload: [data[0], data[1]],
+        });
       } else {
-        setCharacters(data);
+        dispatch({
+          type: "SET_CHARACTERS",
+          payload: data,
+        });
+        //setCharacters(data);
       }
     })();
   }, []);
 
-  const isButtonCanceled = (id: number) => {
-    if (props.selectedToFight.length > 1) {
-      if (props.selectedToFight.some((s: Character) => s.id === id)) {
-        return false;
-      }
-      return true;
-    }
-    return false;
-  };
-
   const submitCharacter = async () => {
     try {
       const { data } = await axios.post("characters", {
-        name,
-        attaque,
-        pv,
-        image,
+        name: createCharacter.name,
+        attaque: createCharacter.attaque,
+        pv: createCharacter.pv,
+        image: createCharacter.image,
       });
-
-      setCharacters([...characters, data]);
+      dispatch({
+        type: "SET_CHARACTERS",
+        payload: [...state.characters, data],
+      });
       setCreate(false);
-      setName("");
-      setImage("");
-      setAttaque(0);
-      setPv(0);
+      setCreateCharacter({
+        name: "",
+        image: "",
+        attaque: 10,
+        pv: 20,
+      });
     } catch (error) {
       console.log(error);
-    }
-  };
-
-  const deleteCharacter = async (id: number) => {
-    try {
-      await axios.delete(`characters/${id}`);
-      setCharacters(characters.filter((c: Character) => c.id !== id));
-      setChosen(0);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const renderProfile = (id: number) => {
-    if (id !== 0) {
-      let character = characters.filter(c => c.id === id);
-
-      return (
-        <BlueBox spaceBetween width={60}>
-          <CharacterProfileCard character={character[0]} />
-          <BloodButton onClick={() => deleteCharacter(id)}>
-            Supprimer le personnage
-          </BloodButton>
-
-          <button
-            disabled={isButtonCanceled(id)}
-            type="submit"
-            onClick={() => {
-              if (props.selectedToFight.some((s: Character) => s.id === id)) {
-                let filtered = props.selectedToFight.filter(
-                  (s: Character) => s.id !== id
-                );
-                props.changeSelectedToFight(filtered);
-              } else {
-                props.changeSelectedToFight([
-                  ...props.selectedToFight,
-                  character[0],
-                ]);
-              }
-            }}
-            style={{
-              textAlign: "center",
-              cursor: isButtonCanceled(id) ? "not-allowed" : "pointer",
-              borderRadius: 8,
-              border: isButtonCanceled(id)
-                ? "1px solid lightgrey"
-                : "1px solid gold",
-              backgroundColor: isButtonCanceled(id)
-                ? colors.darkgrey
-                : colors.blood,
-              padding: "4px 0 4px 0",
-              color: isButtonCanceled(id) ? "black" : "white",
-            }}
-          >
-            {props.selectedToFight.some((s: Character) => s.id === id)
-              ? "Je ne veux plus combattre ! "
-              : "Prêt à combattre !"}
-          </button>
-        </BlueBox>
-      );
     }
   };
 
@@ -135,15 +80,34 @@ function SelectionCharactersCard(props: {
       <BlueBox spaceBetween width={40}>
         <Overflow>
           <ul>
-            {characters.map(c => (
-              <li onClick={() => setChosen(c.id)} key={c.id}>
+            {state.characters.map(c => (
+              <li
+                onClick={() => {
+                  if (create) {
+                    setChosen(c.id);
+                    setCreate(!create);
+                  } else {
+                    setChosen(c.id);
+                  }
+                }}
+                key={c.id}
+              >
                 {c.name}
               </li>
             ))}
           </ul>
         </Overflow>
 
-        <BloodButton onClick={() => setCreate(!create)}>
+        <BloodButton
+          onClick={() => {
+            if (chosen !== 0) {
+              setCreate(!create);
+              setChosen(0);
+            } else {
+              setCreate(!create);
+            }
+          }}
+        >
           {" "}
           {create ? "Annuler le personnage" : "Créer un personnage"}
         </BloodButton>
@@ -153,26 +117,54 @@ function SelectionCharactersCard(props: {
           <div>
             <InputText
               name="Nom"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              value={createCharacter.name}
+              onChange={e =>
+                setCreateCharacter({
+                  name: e.target.value,
+                  image: createCharacter.image,
+                  pv: createCharacter.pv,
+                  attaque: createCharacter.attaque,
+                })
+              }
             />
             <InputText
               name="Image Url"
-              value={image}
-              onChange={e => setImage(e.target.value)}
+              value={createCharacter.image}
+              onChange={e =>
+                setCreateCharacter({
+                  name: createCharacter.name,
+                  image: e.target.value,
+                  pv: createCharacter.pv,
+                  attaque: createCharacter.attaque,
+                })
+              }
             />
             <div style={{ display: "flex", justifyContent: "space-around" }}>
               <InputNumber
                 name="Attaque"
-                value={attaque}
-                setValue={value => setAttaque(value)}
+                value={createCharacter.attaque}
+                setValue={value =>
+                  setCreateCharacter({
+                    name: createCharacter.name,
+                    image: createCharacter.image,
+                    pv: createCharacter.pv,
+                    attaque: value,
+                  })
+                }
                 max="20"
                 min="10"
               />
               <InputNumber
                 name="Pts de Vie"
-                value={pv}
-                setValue={value => setPv(value)}
+                value={createCharacter.pv}
+                setValue={value =>
+                  setCreateCharacter({
+                    name: createCharacter.name,
+                    image: createCharacter.image,
+                    pv: value,
+                    attaque: createCharacter.attaque,
+                  })
+                }
                 max="40"
                 min="20"
               />
@@ -181,9 +173,9 @@ function SelectionCharactersCard(props: {
 
           <BloodButton onClick={submitCharacter}>Valider</BloodButton>
         </BlueBox>
-      ) : (
-        renderProfile(chosen)
-      )}
+      ) : chosen !== 0 ? (
+        <CharacterProfileCard id={chosen} resetChosen={() => setChosen(0)} />
+      ) : null}
     </BloodBox>
   );
 }

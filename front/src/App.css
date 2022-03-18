@@ -7,15 +7,17 @@ main {
 li {
   cursor: pointer;
   padding: 4px 0 4px 0;
+  transition: 0.5s;
 }
 
 li:hover {
-  background-color: rgb(49, 47, 47);
+  color: gold;
 }
 button {
   color: white;
   font-family: "Genos", sans-serif;
   font-size: 16px;
+  transition: 0.5s;
 }
 
 button:hover {
